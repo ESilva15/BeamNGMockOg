@@ -20,7 +20,7 @@ func Replay(address string, port int, fp string) error {
 		log.Fatal("error opening file:", err)
 	}
 
-	addr, conn, err := openUDPServer(address, port)
+	udp, err := newUDPServer(address, port)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func Replay(address string, port int, fp string) error {
 			break
 		}
 
-		if _, err := conn.WriteToUDP(buf.Bytes(), addr); err != nil {
+		if _, err := udp.Conn.WriteToUDP(buf.Bytes(), udp.Addr); err != nil {
 			log.Fatal("send failed:", err)
 			break
 		}
@@ -50,5 +50,5 @@ func Replay(address string, port int, fp string) error {
 		<-ticker.C
 	}
 
-	return conn.Close()
+	return udp.Close()
 }

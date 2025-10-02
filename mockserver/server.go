@@ -5,16 +5,25 @@ import (
 	"net"
 )
 
-func openUDPServer(addr string, port int) (*net.UDPAddr, *net.UDPConn, error) {
+type udpServer struct {
+	Addr *net.UDPAddr
+	Conn *net.UDPConn
+}
+
+func newUDPServer(addr string, port int) (udpServer, error) {
 	udpAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", addr, port))
 	if err != nil {
-		return nil, nil, err
+		return udpServer{}, err
 	}
 
 	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
-		return nil, nil, err
+		return udpServer{}, err
 	}
 
-	return udpAddr, conn, nil
+	return udpServer{Addr: udpAddr, Conn: conn}, nil
+}
+
+func (u *udpServer) Close() error {
+	return u.Conn.Close()
 }

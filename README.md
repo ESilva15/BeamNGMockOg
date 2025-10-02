@@ -13,3 +13,6 @@ without having to be playing the game while doing it (fans are noisy).
 # Usage
 To start replaying:
 `BeamNGMockOg replay -a 127.0.0.1 -p 4443 -i sunburstManual.bin`
+
+To start recording:
+`BeamNGMockOg record -a 127.0.0.1 -p 4443 -o sunburstDCT.bin`

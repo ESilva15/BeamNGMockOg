@@ -22,10 +22,9 @@ func replayAction(cmd *cobra.Command, args []string) {
 var replayCmd = &cobra.Command{
 	Use:   "replay",
 	Short: "replay -i <path-to-bin-file>",
-	Long: `replay will store the data from the given UDP server to the 
-	filepath given by -i`,
-	Args: nil,
-	Run:  replayAction,
+	Long:  `replay will replay the data on the given filepath on a UDP server`,
+	Args:  nil,
+	Run:   replayAction,
 }
 
 func init() {

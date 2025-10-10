@@ -3,24 +3,27 @@
 package mockserver
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/gob"
-	"log"
+	"context"
+	"fmt"
+	"io"
 	"os"
 	"time"
-
-	sdk "github.com/ESilva15/gobngsdk"
 )
 
 // Replay replays a given file <fp> in a UDP server <addr>:<port>
-func Replay(address string, port int, fp string) error {
-	bin, err := os.Open(fp)
+func Replay(ctx context.Context, address string, port int, loop bool, fp string) error {
+	fileInfo, err := os.Stat(fp)
 	if err != nil {
-		log.Fatal("error opening file:", err)
+		return fmt.Errorf("error stating file: %v", err)
 	}
 
-	udp, err := newUDPServer(address, port)
+	bin, err := os.Open(fp)
+	if err != nil {
+		return fmt.Errorf("error opening file: %v", err)
+	}
+
+	reader := NewGobReader(bin)
+	udp, err := NewUDPTransport(address, port)
 	if err != nil {
 		return err
 	}
@@ -28,27 +31,36 @@ func Replay(address string, port int, fp string) error {
 	ticker := time.NewTicker(time.Second / 60)
 	defer ticker.Stop()
 
-	dec := gob.NewDecoder(bin)
 	for {
-		var og sdk.Outgauge
-		if err := dec.Decode(&og); err != nil {
-			log.Fatal("failed to read more data:", err)
-			break
-		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 
-		buf := new(bytes.Buffer)
-		if err := binary.Write(buf, binary.LittleEndian, &og); err != nil {
-			log.Fatal("serialization failed:", err)
-			break
-		}
+		case <-ticker.C:
+			data, err := reader.Next()
+			if err == io.EOF {
+				if !loop {
+					return udp.Close()
+				}
 
-		if _, err := udp.Conn.WriteToUDP(buf.Bytes(), udp.Addr); err != nil {
-			log.Fatal("send failed:", err)
-			break
-		}
+				err = reader.Reset()
+				if err != nil {
+					return err
+				}
+				continue
+			}
 
-		<-ticker.C
+			if err != nil {
+				return err
+			}
+
+			_, err = udp.Send(data)
+			if err != nil {
+				return err
+			}
+
+			percent := int(float64(reader.TotalRead) / float64(fileInfo.Size()) * 100)
+			fmt.Printf("\rReplayed: %d%%", percent)
+		}
 	}
-
-	return udp.Close()
 }

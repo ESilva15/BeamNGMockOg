@@ -5,25 +5,35 @@ import (
 	"net"
 )
 
-type udpServer struct {
-	Addr *net.UDPAddr
-	Conn *net.UDPConn
+type Transport interface {
+	Send(data []byte) error
+	Close() error
 }
 
-func newUDPServer(addr string, port int) (udpServer, error) {
-	udpAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", addr, port))
+type UDPTransport struct {
+	Conn *net.UDPConn
+	Addr *net.UDPAddr
+}
+
+func NewUDPTransport(address string, port int) (*UDPTransport, error) {
+	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", address, port))
 	if err != nil {
-		return udpServer{}, err
+		return nil, err
 	}
 
 	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
-		return udpServer{}, err
+		return nil, err
 	}
 
-	return udpServer{Addr: udpAddr, Conn: conn}, nil
+	return &UDPTransport{Conn: conn, Addr: addr}, nil
 }
 
-func (u *udpServer) Close() error {
+// Send will send a byte array of data trough the UDP server
+func (u *UDPTransport) Send(data []byte) (int, error) {
+	return u.Conn.WriteToUDP(data, u.Addr)
+}
+
+func (u *UDPTransport) Close() error {
 	return u.Conn.Close()
 }

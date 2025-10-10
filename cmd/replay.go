@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ESilva15/BeamNGMockOg/mockserver"
@@ -12,8 +13,10 @@ func replayAction(cmd *cobra.Command, args []string) {
 	inputFile, _ := cmd.Flags().GetString("input")
 	address, _ := cmd.Flags().GetString("address")
 	port, _ := cmd.Flags().GetInt("port")
+	loop, _ := cmd.Flags().GetBool("loop")
 
-	if err := mockserver.Replay(address, port, inputFile); err != nil {
+	ctx := context.Background()
+	if err := mockserver.Replay(ctx, address, port, loop, inputFile); err != nil {
 		fmt.Printf("Something went wrong while playing the file: %v", err)
 	}
 }
@@ -31,4 +34,5 @@ func init() {
 	rootCmd.AddCommand(replayCmd)
 
 	replayCmd.PersistentFlags().StringP("input", "i", "nofile.bin", "input file for serving")
+	replayCmd.PersistentFlags().BoolP("loop", "l", false, "loop replay after finishing")
 }

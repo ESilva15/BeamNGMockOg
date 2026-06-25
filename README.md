@@ -21,3 +21,7 @@ To start recording:
 ## Development
 Use `tcpdump` to listen to the socket and check if data is coming through:
 `tcpdump -i any udp port <port> -X`
+
+### Benchmark
+Run with:
+`go test -bench=. -benchmem`

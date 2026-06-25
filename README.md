@@ -17,3 +17,7 @@ To start replaying:
 
 To start recording:
 `BeamNGMockOg record -a 127.0.0.1 -p 4443 -o sunburstDCT.bin`
+
+## Development
+Use `tcpdump` to listen to the socket and check if data is coming through:
+`tcpdump -i any udp port <port> -X`

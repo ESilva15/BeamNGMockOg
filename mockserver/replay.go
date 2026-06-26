@@ -145,8 +145,8 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 
 			fmt.Fprint(&s, "Flags {\n")
 			fmt.Fprintf(&s, "  OG_TURBO (Has Turbo): %t\n", og.Flags&bngsdk.OG_TURBO != 0)
-			fmt.Fprintf(&s, "  OG_KM (Is Metric):   %t\n", og.Flags&bngsdk.OG_KM != 0)
-			fmt.Fprintf(&s, "  OG_BAR (Pressure):   %t\n", og.Flags&bngsdk.OG_BAR != 0)
+			fmt.Fprintf(&s, "  OG_KM (Is Metric):    %t\n", og.Flags&bngsdk.OG_KM != 0)
+			fmt.Fprintf(&s, "  OG_BAR (Pressure):    %t\n", og.Flags&bngsdk.OG_BAR != 0)
 			fmt.Fprint(&s, "}")
 
 			fmt.Fprint(os.Stdout, s.String())

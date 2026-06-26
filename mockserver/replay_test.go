@@ -47,10 +47,16 @@ func BenchmarkReplayAsync(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ctx, cancel := context.WithCancel(context.Background())
 
-		err := Replay(ctx, assignedAddr.IP.String(), assignedAddr.Port, false, filePath)
+		replayer, err := NewReplayer(assignedAddr.IP.String(), assignedAddr.Port, filePath)
 		if err != nil {
 			cancel()
-			b.Fatalf("Replay failed during benchmark run: %v", err)
+			b.Fatalf("Error setting up replayer: %+v", err)
+		}
+
+		err = replayer.Replay(ctx, false)
+		if err != nil {
+			cancel()
+			b.Fatalf("Replay failed during benchmark run: %+v", err)
 		}
 
 		cancel()

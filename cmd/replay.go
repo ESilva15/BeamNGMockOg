@@ -15,8 +15,14 @@ func replayAction(cmd *cobra.Command, args []string) {
 	port, _ := cmd.Flags().GetInt("port")
 	loop, _ := cmd.Flags().GetBool("loop")
 
+	replayer, err := mockserver.NewReplayer(address, port, inputFile)
+	if err != nil {
+		fmt.Printf("Something went wrong setting up the player: %+v", err)
+		return
+	}
+
 	ctx := context.Background()
-	if err := mockserver.Replay(ctx, address, port, loop, inputFile); err != nil {
+	if err := replayer.Replay(ctx, loop); err != nil {
 		fmt.Printf("Something went wrong while playing the file: %v", err)
 	}
 }

@@ -1,25 +1,23 @@
 package mockserver
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/gob"
 	"io"
+	"unsafe"
 
 	sdk "github.com/ESilva15/gobngsdk"
 )
 
 type GobReader struct {
-	TotalRead int
+	TotalRead int64
 	File      io.ReadSeeker
-	Dec       *gob.Decoder
+	Buf       []byte
 }
 
 func NewGobReader(r io.ReadSeeker) *GobReader {
 	return &GobReader{
 		TotalRead: 0,
 		File:      r,
-		Dec:       gob.NewDecoder(r),
+		Buf:       make([]byte, unsafe.Sizeof(sdk.Outgauge{})),
 	}
 }
 
@@ -29,27 +27,19 @@ func (g *GobReader) Reset() error {
 		return err
 	}
 
-	g.Dec = gob.NewDecoder(g.File)
 	g.TotalRead = 0
 
 	return nil
 }
 
-func (g *GobReader) Next() ([]byte, error) {
-	var og sdk.Outgauge
-
-	err := g.Dec.Decode(&og)
+func (g *GobReader) Next(buffer []byte) error {
+	_, err := io.ReadFull(g.File, buffer)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	buf := new(bytes.Buffer)
-	err = binary.Write(buf, binary.LittleEndian, &og)
-	if err != nil {
-		return nil, err
-	}
+	pos, _ := g.File.Seek(0, io.SeekCurrent)
+	g.TotalRead = pos
 
-	g.TotalRead += len(buf.Bytes())
-
-	return buf.Bytes(), nil
+	return nil
 }

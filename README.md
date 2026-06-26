@@ -24,4 +24,29 @@ Use `tcpdump` to listen to the socket and check if data is coming through:
 
 ### Benchmark
 Run with:
-`go test -bench=. -benchmem`
+`go test ./mockserver -bench=BenchmarkReplayAsync -benchmem -benchtime=1x -memprofile=mem.pprof`
+
+Analyze the output with:
+`go tool pprof -sample_index=alloc_objects mem.pprof` -> `top`
+- `ignore=net` will ignore the net package for example
+- `focus=mockserver` will show only the results from this code we are testing
+or
+`go tool pprof -http=:8080 mem.pprof`
+
+#### Previous results:
+goos: linux
+goarch: amd64
+pkg: github.com/ESilva15/BeamNGMockOg/mockserver
+cpu: AMD Ryzen 5 5600G with Radeon Graphics
+BenchmarkReplayAsync-12    	      1	109433574741 ns/op	4533008 B/op	  66059 allocs/op
+PASS
+ok  	github.com/ESilva15/BeamNGMockOg/mockserver	109.438s
+
+#### Current results
+goos: linux
+goarch: amd64
+pkg: github.com/ESilva15/BeamNGMockOg/mockserver
+cpu: AMD Ryzen 5 5600G with Radeon Graphics
+BenchmarkReplayAsync-12    	      1	109433931841 ns/op	 356088 B/op	  13272 allocs/op
+PASS
+ok  	github.com/ESilva15/BeamNGMockOg/mockserver	109.440s

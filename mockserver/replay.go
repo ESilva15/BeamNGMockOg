@@ -7,42 +7,91 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
+	"unsafe"
+
+	bngsdk "github.com/ESilva15/gobngsdk"
 )
 
 type ViewData struct {
 	Data     []byte
-	SizeRead int
+	SizeRead int64
+}
+
+// Replayer does the replaying
+// Should we make a "player" struct that can record and replay?
+type Replayer struct {
+	DataSourcePath string
+	Socket         *UDPTransport
+
+	// Streams
+	dataViewCh chan ViewData
+	socketCh   chan []byte
+
+	// Mut
+	mut  sync.RWMutex
+	data []byte
+
+	// View
+	viewData ViewData
+}
+
+func NewReplayer(address string, port int, fp string) (*Replayer, error) {
+	udp, err := NewUDPTransport(address, port)
+	if err != nil {
+		return nil, err
+	}
+
+	replayer := &Replayer{
+		DataSourcePath: fp,
+		Socket:         udp,
+		data:           make([]byte, unsafe.Sizeof(bngsdk.Outgauge{})),
+		viewData:       ViewData{},
+		dataViewCh:     make(chan ViewData, 1),
+		socketCh:       make(chan []byte, 1),
+	}
+
+	return replayer, nil
 }
 
 // renderToTerminal will render the data for the users viewing pleasure
-func renderToTerminal(ctx context.Context, stream chan ViewData, fp string) {
-	fileInfo, err := os.Stat(fp)
+func (r *Replayer) renderToTerminal(ctx context.Context) {
+	fileInfo, err := os.Stat(r.DataSourcePath)
 	if err != nil {
 		// NOTE: learn how to handle this error
 		// return fmt.Errorf("error stating file: %v", err)
 	}
 
+	// NOTE: temporary until I make a better view
+	lastPercent := -1
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case data := <-stream:
+		case data := <-r.dataViewCh:
 			percent := int(float64(data.SizeRead) / float64(fileInfo.Size()) * 100)
-			fmt.Printf("\rReplayed: %d%%", percent)
+			if percent != lastPercent {
+				fmt.Printf("\rReplayed: %d%%", percent)
+				lastPercent = percent
+			}
 		}
 	}
 }
 
 // writeToUDPSocket will write the telemetry data to the UDP socket
-func writeToUDPSocket(ctx context.Context, stream chan []byte, socket *UDPTransport) {
+func (r *Replayer) writeToUDPSocket(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case data := <-stream:
-			_, err := socket.Send(data)
+		case data := <-r.socketCh:
+			r.mut.RLock()
+			_, err := r.Socket.Send(data)
+			r.mut.RUnlock()
 			if err != nil {
+				panic(fmt.Sprintf("error writing buffer to socket: %+v", err))
 				continue
 				// NOTE: log the error somewhere maybe
 				// return err
@@ -52,37 +101,32 @@ func writeToUDPSocket(ctx context.Context, stream chan []byte, socket *UDPTransp
 }
 
 // Replay replays a given file <fp> in a UDP server <addr>:<port>
-func Replay(ctx context.Context, address string, port int, loop bool, fp string) error {
-	bin, err := os.Open(fp)
+func (r *Replayer) Replay(ctx context.Context, loop bool) error {
+	bin, err := os.Open(r.DataSourcePath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %v", err)
 	}
 
 	reader := NewGobReader(bin)
-	udp, err := NewUDPTransport(address, port)
-	if err != nil {
-		return err
-	}
+
+	go r.renderToTerminal(ctx)
+	go r.writeToUDPSocket(ctx)
 
 	ticker := time.NewTicker(time.Second / 60)
 	defer ticker.Stop()
-
-	uiChannel := make(chan ViewData, 1)
-	socketChannel := make(chan []byte, 1)
-
-	go renderToTerminal(ctx, uiChannel, fp)
-	go writeToUDPSocket(ctx, socketChannel, udp)
-
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 
 		case <-ticker.C:
-			data, err := reader.Next()
+			r.mut.Lock()
+			err := reader.Next(r.data)
+			r.mut.Unlock()
+
 			if err == io.EOF {
 				if !loop {
-					return udp.Close()
+					return r.Socket.Close()
 				}
 
 				err = reader.Reset()
@@ -97,9 +141,12 @@ func Replay(ctx context.Context, address string, port int, loop bool, fp string)
 				return err
 			}
 
+			r.viewData.Data = r.data
+			r.viewData.SizeRead = reader.TotalRead
+
 			// Send the data to the view
 			select {
-			case uiChannel <- ViewData{Data: data, SizeRead: reader.TotalRead}:
+			case r.dataViewCh <- r.viewData:
 				// Sent the data
 			default:
 				// Dropped the frame!
@@ -107,7 +154,7 @@ func Replay(ctx context.Context, address string, port int, loop bool, fp string)
 
 			// Send the data to the UDP socket
 			select {
-			case socketChannel <- data:
+			case r.socketCh <- r.data:
 				// Sent the data
 			default:
 				// Dropped the frame!

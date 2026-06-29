@@ -7,6 +7,25 @@ import (
 	bngsdk "github.com/ESilva15/gobngsdk"
 )
 
+const (
+	_   = iota
+	KiB = 1 << (10 * iota)
+	MiB
+	GiB
+)
+
+func stringifyRecordingProgress(s *strings.Builder, nBytes int) {
+	if nBytes < KiB {
+		fmt.Fprintf(s, "%d B", nBytes)
+	} else if nBytes < MiB {
+		fmt.Fprintf(s, "%.2f KiB", float64(nBytes)/float64(KiB))
+	} else if nBytes < GiB {
+		fmt.Fprintf(s, "%.2f MiB", float64(nBytes)/float64(MiB))
+	} else {
+		fmt.Fprintf(s, "%.2f GiB", float64(nBytes)/float64(GiB))
+	}
+}
+
 func stringifyOutgaugeData(s *strings.Builder, og *bngsdk.Outgauge) {
 	// NOTE: write a string serialization function on the SDK itself
 	fmt.Fprint(s, "Outgauge {\n")

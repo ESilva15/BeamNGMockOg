@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ESilva15/BeamNGMockOg/mockserver"
@@ -13,7 +14,15 @@ func recordAction(cmd *cobra.Command, args []string) {
 	address, _ := cmd.Flags().GetString("address")
 	port, _ := cmd.Flags().GetInt("port")
 
-	if err := mockserver.Record(address, port, outputFile); err != nil {
+	recorder, err := mockserver.NewRecorder(outputFile, address, port)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create new BeamNG recorder: %+v", err))
+	}
+	defer recorder.Close()
+
+	// NOTE: is this doing anything at all??
+	ctx := context.Background()
+	if err := recorder.Record(ctx); err != nil {
 		fmt.Printf("Something went wrong while recording the file: %v", err)
 	}
 }

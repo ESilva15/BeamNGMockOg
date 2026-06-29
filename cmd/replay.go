@@ -21,6 +21,7 @@ func replayAction(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	// NOTE: is this doing anything at all??
 	ctx := context.Background()
 	if err := replayer.Replay(ctx, loop); err != nil {
 		fmt.Printf("Something went wrong while playing the file: %v", err)

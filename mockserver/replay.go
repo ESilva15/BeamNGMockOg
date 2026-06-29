@@ -84,6 +84,7 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 			err := binary.Read(&bytesReader, binary.LittleEndian, &og)
 			if err != nil {
 				fmt.Fprintf(&s, "FAILED TO PARSE DATA\nError: %+v", err)
+				fmt.Fprint(os.Stdout, s.String())
 				continue
 			}
 

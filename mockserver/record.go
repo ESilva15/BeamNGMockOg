@@ -1,7 +1,6 @@
 package mockserver
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -15,7 +14,7 @@ import (
 
 type recorderViewData struct {
 	TotalBytes int
-	Data       []byte
+	SDK        *bngsdk.BeamNGSDK
 }
 
 type Recorder struct {
@@ -80,8 +79,6 @@ func (r *Recorder) record(ctx context.Context) {
 func (r *Recorder) view(ctx context.Context) {
 	var s strings.Builder
 	var nBytes int
-	var bytesReader bytes.Reader
-	og := bngsdk.Outgauge{}
 
 	for {
 		select {
@@ -91,22 +88,13 @@ func (r *Recorder) view(ctx context.Context) {
 			s.Reset()
 			fmt.Fprintf(os.Stdout, "\x1b[2J\x1b[H")
 
-			r.viewDataMut.RLock()
-			nBytes = viewData.TotalBytes
-			r.viewDataMut.RUnlock()
-
 			stringifyRecordingProgress(&s, nBytes)
 			fmt.Fprintf(&s, "\n\n")
 
-			bytesReader.Reset(viewData.Data)
-			err := binary.Read(&bytesReader, binary.LittleEndian, &og)
-			if err != nil {
-				fmt.Fprintf(&s, "\n\nFAILED TO PARSE DATA\nError: %+v\n\n", err)
-				fmt.Fprint(os.Stdout, s.String())
-				continue
-			}
-
-			stringifyOutgaugeData(&s, &og)
+			r.viewDataMut.RLock()
+			nBytes = viewData.TotalBytes
+			stringifyOutgaugeData(&s, &r.SDK)
+			r.viewDataMut.RUnlock()
 
 			fmt.Fprint(os.Stdout, s.String())
 		}
@@ -132,7 +120,6 @@ func (r *Recorder) Record(ctx context.Context) error {
 			}
 
 			r.viewData.TotalBytes = r.TotalBytes
-			r.viewData.Data = r.SDK.Buffer
 
 			// Send the data to the view
 			select {

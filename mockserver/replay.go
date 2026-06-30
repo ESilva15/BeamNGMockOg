@@ -18,13 +18,14 @@ import (
 )
 
 type ViewData struct {
-	Data     []byte
+	SDK      *bngsdk.BeamNGSDK
 	SizeRead int64
 }
 
 // Replayer does the replaying
 // Should we make a "player" struct that can record and replay?
 type Replayer struct {
+	SDK            bngsdk.BeamNGSDK
 	DataSourcePath string
 	Socket         *UDPTransport
 
@@ -33,8 +34,7 @@ type Replayer struct {
 	socketCh   chan []byte
 
 	// Mut
-	mut  sync.RWMutex
-	data []byte
+	mut sync.RWMutex
 
 	// View
 	viewData ViewData
@@ -48,11 +48,14 @@ func NewReplayer(address string, port int, fp string) (*Replayer, error) {
 
 	replayer := &Replayer{
 		DataSourcePath: fp,
-		Socket:         udp,
-		data:           make([]byte, unsafe.Sizeof(bngsdk.Outgauge{})),
-		viewData:       ViewData{},
-		dataViewCh:     make(chan ViewData, 1),
-		socketCh:       make(chan []byte, 1),
+		SDK: bngsdk.BeamNGSDK{
+			Data:   &bngsdk.Outgauge{},
+			Buffer: make([]byte, unsafe.Sizeof(bngsdk.Outgauge{})),
+		},
+		Socket:     udp,
+		viewData:   ViewData{},
+		dataViewCh: make(chan ViewData, 1),
+		socketCh:   make(chan []byte, 1),
 	}
 
 	return replayer, nil
@@ -69,7 +72,6 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 	// NOTE: temporary until I make a better view
 	var s strings.Builder
 	var bytesReader bytes.Reader
-	og := bngsdk.Outgauge{}
 
 	for {
 		select {
@@ -80,8 +82,8 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 			s.Reset()
 			fmt.Fprintf(os.Stdout, "\x1b[2J\x1b[H")
 
-			bytesReader.Reset(data.Data)
-			err := binary.Read(&bytesReader, binary.LittleEndian, &og)
+			bytesReader.Reset(data.SDK.Buffer)
+			err := binary.Read(&bytesReader, binary.LittleEndian, r.SDK.Data)
 			if err != nil {
 				fmt.Fprintf(&s, "FAILED TO PARSE DATA\nError: %+v", err)
 				fmt.Fprint(os.Stdout, s.String())
@@ -91,7 +93,7 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 			percent := int(float64(data.SizeRead) / float64(fileInfo.Size()) * 100)
 			fmt.Fprintf(&s, "Replayed: %d%%\n", percent)
 
-			stringifyOutgaugeData(&s, &og)
+			stringifyOutgaugeData(&s, data.SDK)
 
 			fmt.Fprint(os.Stdout, s.String())
 		}
@@ -139,7 +141,7 @@ func (r *Replayer) Replay(ctx context.Context, loop bool) error {
 
 		case <-ticker.C:
 			r.mut.Lock()
-			err := reader.Next(r.data)
+			err := reader.Next(r.SDK.Buffer)
 			r.mut.Unlock()
 
 			if err == io.EOF {
@@ -159,7 +161,8 @@ func (r *Replayer) Replay(ctx context.Context, loop bool) error {
 				return err
 			}
 
-			r.viewData.Data = r.data
+			// NOTE: Really like this???
+			r.viewData.SDK = &r.SDK
 			r.viewData.SizeRead = reader.TotalRead
 
 			// Send the data to the view
@@ -172,7 +175,7 @@ func (r *Replayer) Replay(ctx context.Context, loop bool) error {
 
 			// Send the data to the UDP socket
 			select {
-			case r.socketCh <- r.data:
+			case r.socketCh <- r.SDK.Buffer:
 				// Sent the data
 			default:
 				// Dropped the frame!

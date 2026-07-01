@@ -64,10 +64,10 @@ func (r *Recorder) record(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case data := <-r.recorderCh:
-			r.mut.RLock()
-			err := binary.Write(r.OutputFile, binary.LittleEndian, data)
+			r.mut.Lock()
+			err := binary.Write(r.OutputFile, binary.LittleEndian, r.SDK.Data)
 			r.TotalBytes += len(data)
-			r.mut.RUnlock()
+			r.mut.Unlock()
 
 			if err != nil {
 				// NOTE: find a way of logging this somehow
@@ -129,7 +129,7 @@ func (r *Recorder) Record(ctx context.Context) error {
 				// Dropped the frame!
 			}
 
-			// Send the data to the UDP socket
+			// Write the data to the file
 			select {
 			case r.recorderCh <- r.SDK.Buffer:
 				// Sent the data

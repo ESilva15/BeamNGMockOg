@@ -1,8 +1,8 @@
 package mockserver
 
 import (
+	"bytes"
 	"fmt"
-	"strings"
 
 	bngsdk "github.com/ESilva15/gobngsdk"
 )
@@ -14,7 +14,7 @@ const (
 	GiB
 )
 
-func stringifyRecordingProgress(s *strings.Builder, nBytes int) {
+func stringifyRecordingProgress(s *bytes.Buffer, nBytes int) {
 	if nBytes < KiB {
 		fmt.Fprintf(s, "%d B", nBytes)
 	} else if nBytes < MiB {
@@ -26,7 +26,7 @@ func stringifyRecordingProgress(s *strings.Builder, nBytes int) {
 	}
 }
 
-func stringifyOutgaugeData(s *strings.Builder, sdk *bngsdk.BeamNGSDK) {
+func stringifyOutgaugeData(s *bytes.Buffer, sdk *bngsdk.BeamNGSDK) {
 	// NOTE: write a string serialization function on the SDK itself
 	fmt.Fprint(s, "Outgauge {\n")
 	fmt.Fprintf(s, "  Time:        %d ms\n", sdk.Data.Time)

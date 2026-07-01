@@ -1,11 +1,11 @@
 package mockserver
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -77,26 +77,28 @@ func (r *Recorder) record(ctx context.Context) {
 }
 
 func (r *Recorder) view(ctx context.Context) {
-	var s strings.Builder
+	var buf bytes.Buffer
 	var nBytes int
+
+	buf.Grow(2048)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case viewData := <-r.viewCh:
-			s.Reset()
-			fmt.Fprintf(os.Stdout, "\x1b[2J\x1b[H")
+			buf.Reset()
+			buf.WriteString("\x1b[2J\x1b[H")
 
-			stringifyRecordingProgress(&s, nBytes)
-			fmt.Fprintf(&s, "\n\n")
+			stringifyRecordingProgress(&buf, nBytes)
+			fmt.Fprintf(&buf, "\n\n")
 
 			r.viewDataMut.RLock()
 			nBytes = viewData.TotalBytes
-			stringifyOutgaugeData(&s, &r.SDK)
+			stringifyOutgaugeData(&buf, &r.SDK)
 			r.viewDataMut.RUnlock()
 
-			fmt.Fprint(os.Stdout, s.String())
+			_, _ = buf.WriteTo(os.Stdout)
 		}
 	}
 }

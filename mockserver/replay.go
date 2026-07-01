@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"sync"
 	"time"
 	"unsafe"
@@ -69,9 +68,10 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 		// return fmt.Errorf("error stating file: %v", err)
 	}
 
-	// NOTE: temporary until I make a better view
-	var s strings.Builder
+	var buf bytes.Buffer
 	var bytesReader bytes.Reader
+
+	buf.Grow(2048)
 
 	for {
 		select {
@@ -79,23 +79,23 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 			return
 		case data := <-r.dataViewCh:
 			// Reset to the start of the terminal
-			s.Reset()
-			fmt.Fprintf(os.Stdout, "\x1b[2J\x1b[H")
+			buf.Reset()
+			buf.WriteString("\x1b[2J\x1b[H")
 
 			bytesReader.Reset(data.SDK.Buffer)
 			err := binary.Read(&bytesReader, binary.LittleEndian, r.SDK.Data)
 			if err != nil {
-				fmt.Fprintf(&s, "FAILED TO PARSE DATA\nError: %+v", err)
-				fmt.Fprint(os.Stdout, s.String())
+				fmt.Fprintf(&buf, "FAILED TO PARSE DATA\nError: %+v", err)
+				_, _ = buf.WriteTo(os.Stdout)
 				continue
 			}
 
 			percent := int(float64(data.SizeRead) / float64(fileInfo.Size()) * 100)
-			fmt.Fprintf(&s, "Replayed: %d%%\n", percent)
+			fmt.Fprintf(&buf, "Replayed: %d%%\n", percent)
 
-			stringifyOutgaugeData(&s, data.SDK)
+			stringifyOutgaugeData(&buf, data.SDK)
 
-			fmt.Fprint(os.Stdout, s.String())
+			buf.WriteTo(os.Stdout)
 		}
 	}
 }

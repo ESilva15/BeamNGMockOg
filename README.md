@@ -15,12 +15,14 @@ To start replaying:
 `BeamNGMockOg replay [--loop] -a 127.0.0.1 -p 4443 -i sunburstManual.bin`
 - `loop` allows the replay functionality to keep replaying the same data file
 
+
 To start recording:
 `BeamNGMockOg record -a 127.0.0.1 -p 4443 -o sunburstDCT.bin`
 
 ## Development
 Use `tcpdump` to listen to the socket and check if data is coming through:
 `tcpdump -i any udp port <port> -X`
+
 
 ### Benchmark
 Run with:
@@ -33,16 +35,10 @@ Analyze the output with:
 or
 `go tool pprof -http=:8080 mem.pprof`
 
-#### Previous results:
-goos: linux
-goarch: amd64
-pkg: github.com/ESilva15/BeamNGMockOg/mockserver
-cpu: AMD Ryzen 5 5600G with Radeon Graphics
-BenchmarkReplayAsync-12    	      1	109433574741 ns/op	4533008 B/op	  66059 allocs/op
-PASS
-ok  	github.com/ESilva15/BeamNGMockOg/mockserver	109.438s
 
-#### Current results
+#### Previous results:
+Note: this were made before introducing the real time visualizer
+```
 goos: linux
 goarch: amd64
 pkg: github.com/ESilva15/BeamNGMockOg/mockserver
@@ -50,3 +46,16 @@ cpu: AMD Ryzen 5 5600G with Radeon Graphics
 BenchmarkReplayAsync-12    	      1	109433931841 ns/op	 356088 B/op	  13272 allocs/op
 PASS
 ok  	github.com/ESilva15/BeamNGMockOg/mockserver	109.440s
+```
+
+
+#### Current results
+```
+goos: linux
+goarch: amd64
+pkg: github.com/ESilva15/BeamNGMockOg/mockserver
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor
+BenchmarkReplayAsync-16    	      1	109433890158 ns/op	1673128 B/op	 112986 allocs/op
+PASS
+ok  	github.com/ESilva15/BeamNGMockOg/mockserver	109.439s
+```

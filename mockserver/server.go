@@ -5,6 +5,8 @@ import (
 	"net"
 )
 
+const ProgramName = "TelemetryMockerserver"
+
 type Transport interface {
 	Send(data []byte) error
 	Close() error

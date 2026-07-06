@@ -89,6 +89,9 @@ func (r *Recorder) view(ctx context.Context) {
 		case viewData := <-r.viewCh:
 			buf.Reset()
 			buf.WriteString("\x1b[2J\x1b[H")
+			fmt.Fprintf(&buf, "\x1b]0;%s - Recording ", ProgramName)
+			stringifyRecordingProgress(&buf, nBytes)
+			fmt.Fprintf(&buf, "\x07")
 
 			stringifyRecordingProgress(&buf, nBytes)
 			fmt.Fprintf(&buf, "\n\n")

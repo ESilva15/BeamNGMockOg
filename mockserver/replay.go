@@ -48,7 +48,7 @@ func NewReplayer(address string, port int, fp string) (*Replayer, error) {
 	replayer := &Replayer{
 		DataSourcePath: fp,
 		SDK: bngsdk.BeamNGSDK{
-			Data:   &bngsdk.Outgauge{},
+			Data:   bngsdk.Outgauge{},
 			Buffer: make([]byte, unsafe.Sizeof(bngsdk.Outgauge{})),
 		},
 		Socket:     udp,
@@ -79,18 +79,20 @@ func (r *Replayer) renderToTerminal(ctx context.Context) {
 			return
 		case data := <-r.dataViewCh:
 			// Reset to the start of the terminal
+			percent := int(float64(data.SizeRead) / float64(fileInfo.Size()) * 100)
+
 			buf.Reset()
 			buf.WriteString("\x1b[2J\x1b[H")
+			fmt.Fprintf(&buf, "\x1b]0;%s - Replaying %d%%\x07", ProgramName, percent)
 
 			bytesReader.Reset(data.SDK.Buffer)
-			err := binary.Read(&bytesReader, binary.LittleEndian, r.SDK.Data)
+			err := binary.Read(&bytesReader, binary.LittleEndian, &r.SDK.Data)
 			if err != nil {
 				fmt.Fprintf(&buf, "FAILED TO PARSE DATA\nError: %+v", err)
 				_, _ = buf.WriteTo(os.Stdout)
 				continue
 			}
 
-			percent := int(float64(data.SizeRead) / float64(fileInfo.Size()) * 100)
 			fmt.Fprintf(&buf, "Replayed: %d%%\n", percent)
 
 			stringifyOutgaugeData(&buf, data.SDK)

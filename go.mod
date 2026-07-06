@@ -3,7 +3,7 @@ module github.com/ESilva15/BeamNGMockOg
 go 1.23.2
 
 require (
-	github.com/ESilva15/gobngsdk v1.1.1
+	github.com/ESilva15/gobngsdk v1.1.3
 	github.com/spf13/cobra v1.10.1
 )
 

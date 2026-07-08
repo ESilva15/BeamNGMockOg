@@ -1,6 +1,6 @@
 package main
 
-import "github.com/ESilva15/BeamNGMockOg/cmd"
+import "github.com/ESilva15/TelemetryMockserver/cmd"
 
 func main() {
 	cmd.Execute()

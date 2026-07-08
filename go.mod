@@ -1,4 +1,4 @@
-module github.com/ESilva15/BeamNGMockOg
+module github.com/ESilva15/TelemetryMockserver
 
 go 1.23.2
 

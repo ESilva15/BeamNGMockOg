@@ -9,8 +9,8 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "bngmock",
-	Short: "CLI for a BeamNG OG mockserver",
+	Use:   "telemetrymockserver",
+	Short: "CLI for mocking and recording data from different sources. Primarily for simracing",
 	Long:  ``,
 }
 

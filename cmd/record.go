@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ESilva15/BeamNGMockOg/mockserver"
+	"github.com/ESilva15/TelemetryMockserver/mockserver"
 
 	"github.com/spf13/cobra"
 )

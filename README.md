@@ -12,16 +12,20 @@ without having to be playing the game while doing it (fans are noisy).
 
 # Usage
 To start replaying:
-`BeamNGMockOg replay [--loop] -a 127.0.0.1 -p 4443 -i sunburstManual.bin`
+`telemetrymockserver beamng replay [--loop] -a 127.0.0.1 -p 4443 -i sunburstManual.bin`
 - `loop` allows the replay functionality to keep replaying the same data file
 
 
 To start recording:
-`BeamNGMockOg record -a 127.0.0.1 -p 4443 -o sunburstDCT.bin`
+`BeamNGMockOg beamng record -a 127.0.0.1 -p 4443 -o sunburstDCT.bin`
 
 ## Development
 Use `tcpdump` to listen to the socket and check if data is coming through:
 `tcpdump -i any udp port <port> -X`
+
+### TODO:
+- [ ] Create the auto completion file and add it to `$FPATH`
+- [ ] Create a shortcut so we don't have to type out `telemetrymockserver` everytime
 
 
 ### Benchmark

@@ -12,11 +12,8 @@ import (
 // beamNGCmd is the parent command for the BeamNG agent actions
 var beamNGCmd = &cobra.Command{
 	Use:   "beamng",
-	Short: "record -o <path-to-bin-file>",
-	Long: "record will store the data from the given UDP server to the " +
-		"filepath given by -i",
-	Args: nil,
-	// Run:  beamngAction,
+	Short: "BeamNG telemetry utilities",
+	Args:  nil,
 }
 
 var beamNGRecordCMD = &cobra.Command{
